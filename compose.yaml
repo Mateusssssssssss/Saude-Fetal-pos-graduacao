@@ -1,0 +1,19 @@
+services:
+  inference:
+    image: saude-fetal-inference:local
+    build: .
+    platform: linux/amd64
+    environment:
+      DAGSHUB_USER_TOKEN: "${DAGSHUB_USER_TOKEN:?Preencha DAGSHUB_USER_TOKEN no arquivo .env}"
+      MODEL_URI: "${MODEL_URI:-models:/saude-fetal-xgboost@champion}"
+    ports:
+      - "127.0.0.1:${SERVING_PORT:-8000}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8080/ping', timeout=3).close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 45s

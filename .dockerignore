@@ -1,0 +1,12 @@
+**
+!Dockerfile
+!docker/
+!docker/requirements.txt
+!docker/serve_model.py
+!configs/
+!configs/experiment.yaml
+!src/
+!src/saude_fetal/
+!src/saude_fetal/__init__.py
+!src/saude_fetal/config.py
+!src/saude_fetal/tracking.py

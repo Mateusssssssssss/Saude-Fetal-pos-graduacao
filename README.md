@@ -22,6 +22,8 @@ Saude-Fetal-pos-graduacao/
 ├── environment.yml                  # Ambiente conda (saude_fetal)
 ├── requirements.txt                 # Dependências pip complementares
 ├── Makefile                         # Atalhos opcionais
+├── Dockerfile                       # Imagem de inferência em CPU
+├── compose.yaml                     # Serviço de inferência local
 ├── configs/
 │   ├── data_full.yaml               # Schema das 21 features e split TRAIN/TEST
 │   ├── model.yaml                   # Random Forest, XGBoost e grades de busca
@@ -204,6 +206,29 @@ print(pipeline.predict_proba(X))  # Colunas na ordem de metadata["class_order"].
 O [notebook de métricas no TEST](notebooks/notebook_metrics_teste.ipynb) apresenta a avaliação do XGBoost versão 1 nos 426 exames reservados. A linha `XGBoost · 21 features` do [CSV da avaliação](reports/test/xgboost_full_vs_reduced_v1/metrics/test_model_metrics.csv) corresponde ao modelo selecionado.
 
 As métricas do TEST registram a avaliação das receitas congeladas. Mudanças guiadas por esses resultados exigem novos dados reservados para confirmação independente.
+
+### 4.10. Servir o XGBoost com Docker
+
+Com o Docker Desktop ativo e `DAGSHUB_USER_TOKEN` no `.env`, execute pela raiz do projeto.
+
+```powershell
+docker compose build --pull
+docker compose up -d
+docker compose ps
+```
+
+A imagem de inferência usa Python 3.12 sobre Debian Trixie. Para buscar uma base atualizada e reaplicar as correções do Debian mesmo quando o Docker tem camadas em cache, execute `docker compose build --pull --no-cache`.
+
+A imagem `saude-fetal-inference:local` baixa o XGBoost do DagsHub na inicialização e serve inferência em `http://127.0.0.1:8000`. O padrão usa `models:/saude-fetal-xgboost@champion`. Defina `MODEL_URI=models:/saude-fetal-xgboost/1` para fixar a versão ou `SERVING_PORT` para mudar a porta local. O token é fornecido em execução pelo Compose.
+
+```powershell
+(Invoke-WebRequest http://127.0.0.1:8000/ping).StatusCode
+$example = Get-Content -Raw best_model/request_example.json | ConvertFrom-Json
+$body = @{ dataframe_records = @($example) } | ConvertTo-Json -Depth 4
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/invocations -ContentType 'application/json' -Body $body
+```
+
+`/invocations` recebe as 21 features e devolve a classe `1` (Normal), `2` (Suspeito) ou `3` (Patológico) em `predictions`. [Formato da API de inferência do MLflow](https://mlflow.org/docs/latest/ml/deployment/deploy-model-locally/)
 
 ## 5. Resultados da base de 21 features
 
