@@ -6,4 +6,5 @@ param([int]$Port = 5000)
 
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
+$env:MLFLOW_ALLOW_FILE_STORE = 'true'
 mlflow ui --backend-store-uri "./mlruns" --port $Port

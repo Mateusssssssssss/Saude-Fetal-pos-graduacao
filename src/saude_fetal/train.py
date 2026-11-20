@@ -197,7 +197,8 @@ def train_one_model(
             signature = infer_signature(example, final_pipeline.predict(example))
             mlflow.sklearn.log_model(
                 final_pipeline,
-                artifact_path="model",
+                name="model",
+                serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
                 code_paths=(
                     [str(Path(__file__).parent)] if model_cfg["estimator"] == "xgboost" else None
                 ),

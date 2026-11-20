@@ -24,9 +24,9 @@ cnn:
   learning_rate: 0.001
 
 mlflow:
-  backend: local  # local ou dagshub
+  backend: dagshub  # tracking e registro remotos por padrão
   # FileStore local em mlruns/ + artefatos em mlartifacts/, ambos na raiz do
-  # projeto (ignorados no Git). Interface: mlflow ui --backend-store-uri ./mlruns
+  # projeto (ignorados no Git). Interface: scripts/mlflow_ui.ps1
   tracking_uri: mlruns
   artifact_dir: mlartifacts
   experiment_name: saude-fetal-classificacao

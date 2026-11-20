@@ -2,7 +2,7 @@
 .PHONY: install data train test mlflow format
 
 install:
-	pip install -e ".[notebook,dev]"
+	pip install -e ".[notebook,dev,dagshub]"
 
 data:
 	python -m saude_fetal.data
@@ -14,7 +14,7 @@ test:
 	python -m pytest
 
 mlflow:
-	mlflow ui --backend-store-uri ./mlruns
+	MLFLOW_ALLOW_FILE_STORE=true mlflow ui --backend-store-uri ./mlruns
 
 format:
 	black src tests scripts

@@ -25,7 +25,7 @@ Saude-Fetal-pos-graduacao/
 ├── configs/
 │   ├── data_full.yaml               # Schema das 21 features e split TRAIN/TEST
 │   ├── model.yaml                   # Random Forest, XGBoost e grades de busca
-│   └── experiment.yaml              # Validação cruzada e configuração do MLflow
+│   └── experiment.yaml              # Validação cruzada e destino DagsHub
 ├── data/
 │   ├── raw/
 │   │   └── fetal_health.csv         # Base de 21 features, mantida localmente
@@ -52,6 +52,7 @@ Saude-Fetal-pos-graduacao/
 │       ├── train.py                 # Fluxo de treino com CV no TRAIN + log no MLflow
 │       ├── train_dl.py              # Treino e avaliação da CNN
 │       ├── evaluate_test.py         # Geração dos resultados finais no TEST
+│       ├── publish_best_model.py    # Publicação do pipeline congelado no DagsHub
 │       └── predict.py               # Inferência a partir de pipeline salvo
 ├── scripts/
 │   ├── prepare_data.py              # Wrapper CLI para criar o split TRAIN/TEST
@@ -68,19 +69,24 @@ Saude-Fetal-pos-graduacao/
 
 ## 3. Instalação e ambiente
 
-Com o ambiente conda `saude_fetal` ativo:
+O projeto usa **MLflow 3.18.0** no ambiente Conda `saude_fetal`. O extra `dagshub` instala o SDK e mantém a faixa de `graphql-core` compatível com o MLflow.
 
 ```bash
 conda activate saude_fetal
-pip install -e ".[notebook,dev]"
+python -m pip install -e ".[notebook,dev,dagshub]"
 ```
 
 Se precisar criar ou atualizar o ambiente a partir do `environment.yml`:
 
 ```bash
 conda env update -n saude_fetal -f environment.yml --prune
-pip install -e ".[notebook,dev]"
+conda activate saude_fetal
+python -m pip install -e ".[notebook,dev,dagshub]"
 ```
+
+### Autenticar no DagsHub
+
+Os novos runs usam o MLflow hospedado em `mateusssssss/Saude-Fetal-pos-graduacao`, conforme [configs/experiment.yaml](configs/experiment.yaml). Na primeira configuração, copie `.env.example` para `.env` na raiz e preencha `DAGSHUB_USER_TOKEN` com um token com acesso de escrita ao repositório. O Git ignora o `.env`. O SDK também aceita a sessão criada por `dagshub login`. [Repositório no DagsHub](https://dagshub.com/mateusssssss/Saude-Fetal-pos-graduacao) · [Autenticação do cliente DagsHub](https://dagshub.com/docs/client/reference/auth/)
 
 ## 4. Como executar (fluxo reproduzível)
 
@@ -102,7 +108,7 @@ python -c "from saude_fetal.config import load_config; from saude_fetal.data imp
 
 Use o TRAIN para análises que orientem a modelagem. O [notebook de EDA](notebooks/01_eda.ipynb) reúne a análise histórica anterior ao experimento de 21 features.
 
-### 4.3. Buscar hiperparâmetros e registrar os modelos no MLflow
+### 4.3. Treinar as árvores e registrar os experimentos no DagsHub
 
 ```bash
 python -m saude_fetal.train --workflow trees --data-config data_full
@@ -112,44 +118,20 @@ As árvores usam os mesmos cinco folds externos agrupados da CNN. A busca intern
 
 Para usar o [notebook de treino](notebooks/02_model_training.ipynb), defina `RUN_TRAINING = True` e acrescente `data_config="data_full"` à chamada de `run_training`.
 
-Por padrão, o destino é o FileStore local em `mlruns/`, com artefatos em `mlartifacts/`. O fluxo compara Random Forest e XGBoost em cinco folds externos estratificados no TRAIN. Dentro de cada fold externo, uma `GridSearchCV` de três folds seleciona por F1 macro e reajusta a melhor configuração. Os pipelines dos folds externos geram os rótulos e scores OOF. Depois, uma busca de três folds no TRAIN completo seleciona e reajusta o pipeline final de cada família.
+Dentro de cada fold externo, uma `GridSearchCV` de três folds seleciona por F1 macro e reajusta a melhor configuração. Os pipelines dos folds externos geram os rótulos e scores OOF. Depois, uma busca de três folds no TRAIN completo seleciona e reajusta o pipeline final de cada família.
 
 Cada grade tem oito combinações. A Random Forest explora profundidade, tamanho da folha e ponderação de classes com 150 árvores. O XGBoost explora profundidade, quantidade de árvores e taxa de aprendizado. São 150 ajustes por família, incluindo os seis refits. O desempate usa o primeiro candidato na ordem da grade.
 
-O run pai registra configuração, hashes, versões, métricas comparativas, manifesto e figuras. Os dois runs filhos registram as grades completas, parâmetros escolhidos, métricas por fold, diagnósticos OOF e o pipeline final, quando habilitado. O TEST fica reservado para a avaliação da receita congelada.
+A aba **Experiments** do DagsHub mostra o run pai e um run filho por família. O tracking guarda métricas agregadas, configurações, hashes, grades em CSV e gráficos. Com `mlflow.log_models` ativo, o pipeline ajustado também fica associado ao run. O comando de publicação da seção 4.8 cria a versão no Model Registry. Os relatórios para os notebooks ficam em `reports/runs/<parent_run_id>/`. [MLflow no DagsHub](https://dagshub.com/mateusssssss/Saude-Fetal-pos-graduacao.mlflow/#/experiments/0)
 
-#### Registrar no DagsHub
+### 4.4. Consultar o histórico local do MLflow
 
-O `environment.yml` inclui a integração DagsHub. Com um ambiente `saude_fetal` já existente, instale o extra pela raiz do projeto.
-
-```powershell
-conda activate saude_fetal
-python -m pip install -e ".[dagshub]"
-```
-
-Para autenticação por token, copie `.env.example` para `.env` na raiz e preencha `DAGSHUB_USER_TOKEN` com um token de uma conta com acesso de escrita ao repositório. A variável de ambiente tem precedência sobre o arquivo, que é ignorado pelo Git. Em sessão interativa, o SDK também aceita autenticação via `dagshub login`. [Autenticação do cliente DagsHub](https://dagshub.com/docs/client/reference/auth/)
-
-```powershell
-python -m saude_fetal.train --workflow trees --data-config data_full --tracking-backend dagshub
-```
-
-No notebook de treino, defina `TRACKING_BACKEND = "dagshub"`. Para alterar o padrão do projeto, defina `mlflow.backend: dagshub` em `configs/experiment.yaml`. Use `--tracking-backend local` para selecionar o FileStore do projeto.
-
-O treino chama `dagshub.init(..., mlflow=True)` com o proprietário `mateusssssss` e o repositório `Saude-Fetal-pos-graduacao`. Acompanhe os runs na aba **Experiments** do repositório. O DagsHub hospeda métricas, configurações, gráficos e pipelines, conforme `mlflow.log_models`. O CSV de treino é representado apenas por metadados no tracking. O pipeline aparece como artefato do run. [Repositório DagsHub](https://dagshub.com/mateusssssss/Saude-Fetal-pos-graduacao) · [Integração DagsHub com MLflow](https://dagshub.com/docs/integration_guide/mlflow_tracking/)
-
-Os relatórios de cada execução ficam em `reports/runs/<parent_run_id>/`. O manifesto identifica o destino, o experimento e os runs filhos. Para carregar um modelo remoto, use `load_model` de `saude_fetal.predict`.
-
-```python
-from saude_fetal.predict import load_model
-
-pipeline = load_model("runs:/<run_id_do_modelo>/model", tracking_backend="dagshub")
-```
-
-### 4.4. Abrir a interface do MLflow
+O ambiente usa MLflow 3.18.0. Para abrir os runs e versões já armazenados em `mlruns/`, use o script abaixo.
 
 ```powershell
 .\scripts\mlflow_ui.ps1
 # ou diretamente:
+$env:MLFLOW_ALLOW_FILE_STORE = 'true'
 mlflow ui --backend-store-uri ./mlruns
 ```
 
@@ -171,7 +153,7 @@ A CNN usa TensorFlow/Keras e recebe as 21 features na ordem de `configs/data_ful
 
 ```powershell
 conda activate saude_fetal
-python -m pip install -e ".[dl,notebook]"
+python -m pip install -e ".[dl,notebook,dagshub]"
 python -m saude_fetal.train --workflow cnn --data-config data_full
 ```
 
@@ -179,9 +161,25 @@ Use `--workflow all --data-config data_full` para treinar as árvores e a CNN na
 
 O modelo Keras é salvo em `runs:/<run_id>/model`. Para carregá-lo, abra uma sessão de tracking com `tracking_session` de `saude_fetal.tracking` e chame `mlflow.keras.load_model`. Use uma matriz `float32` com as colunas na ordem de `input_schema.json`. A coluna de maior score indica a posição da classe em `class_order`.
 
-### 4.8. Carregar o XGBoost selecionado
+### 4.8. Carregar e publicar o XGBoost selecionado
 
-O XGBoost selecionado pela CV externa da base completa está no Model Registry local como `saude-fetal-xgboost@champion`. O diretório `best_model/` reúne o pipeline Joblib, o SHA-256, o schema de entrada e a referência da versão no MLflow. O arquivo `requirements.txt` dessa pasta registra as dependências do pipeline exportado.
+O XGBoost selecionado pela CV externa da base completa foi publicado no Model Registry do DagsHub como `models:/saude-fetal-xgboost@champion` (versão 1). O diretório `best_model/` reúne o pipeline Joblib, o SHA-256, o schema de entrada e a proveniência do ajuste original. O arquivo `requirements.txt` dessa pasta registra as dependências do pipeline exportado. [Run de publicação no DagsHub](https://dagshub.com/mateusssssss/Saude-Fetal-pos-graduacao.mlflow/#/experiments/0/runs/04fa1edf388341ca96c0fbead7a848e6)
+
+```python
+from saude_fetal.predict import load_model
+
+pipeline = load_model("models:/saude-fetal-xgboost@champion", tracking_backend="dagshub")
+```
+
+Use `models:/saude-fetal-xgboost/1` para fixar a versão avaliada no TEST.
+
+Para repetir a publicação, configure a autenticação e execute pela raiz do projeto. O comando reutiliza a versão registrada com o mesmo SHA-256 e valida a inferência com um exemplo sintético.
+
+```powershell
+python -m saude_fetal.publish_best_model
+```
+
+Para usar a cópia Joblib da pasta `best_model/`, carregue o pacote local.
 
 ```python
 import json

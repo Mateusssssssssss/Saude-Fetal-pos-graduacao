@@ -17,14 +17,14 @@ dependencies = [
     "xgboost>=3.1,<4",
     "matplotlib>=3.8",
     "pyyaml>=6.0",
-    "mlflow>=2.22,<3.0",
+    "mlflow==3.18.0",
 ]
 
 [project.optional-dependencies]
 notebook = ["jupyterlab", "ipykernel", "nbconvert"]
 dagshub = [
     "dagshub>=0.6,<1",
-    # Compatível com o gql do DagsHub e com o Graphene do MLflow 2.
+    # Faixa compartilhada pelo gql do DagsHub e pelo Graphene.
     "graphql-core>=3.2,<3.3",
     "python-dotenv>=1.0,<2",
 ]

@@ -211,7 +211,7 @@ def train_cnn(
             # O flavor nativo preserva a rede, a imputação e a normalização.
             model_info = mlflow.keras.log_model(
                 final_model,
-                "model",
+                name="model",
                 signature=infer_signature(example, expected),
                 metadata={"features": features, "class_order": labels.tolist()},
                 pip_requirements=[

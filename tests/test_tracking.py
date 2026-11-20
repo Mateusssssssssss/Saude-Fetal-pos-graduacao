@@ -18,7 +18,8 @@ def test_dagshub_session_uses_remote_artifacts_and_restores_credentials(tmp_path
     prior_sdk_token = sdk_config.token
     cfg = load_config("experiment")["mlflow"]
     local_uri = (tmp_path / "mlruns").as_uri()
-    mlflow.set_tracking_uri(local_uri)
+    with tracking_session(cfg, backend="local", tracking_uri=local_uri):
+        assert mlflow.get_registry_uri() == local_uri
     monkeypatch.delenv("DAGSHUB_USER_TOKEN", raising=False)
     monkeypatch.setenv("MLFLOW_TRACKING_PASSWORD", "previous-password")
     monkeypatch.setenv("MLFLOW_TRACKING_TOKEN", "previous-bearer")
@@ -37,10 +38,11 @@ def test_dagshub_session_uses_remote_artifacts_and_restores_credentials(tmp_path
     client.get_experiment.return_value.experiment_id = "42"
     monkeypatch.setattr(mlflow, "MlflowClient", lambda: client)
 
-    with tracking_session(cfg, backend="dagshub"):
+    with tracking_session(cfg):
         assert mlflow.get_tracking_uri() == (
             "https://dagshub.com/mateusssssss/Saude-Fetal-pos-graduacao.mlflow"
         )
+        assert mlflow.get_registry_uri() == mlflow.get_tracking_uri()
         assert os.environ["MLFLOW_TRACKING_PASSWORD"] == "test-token"
         assert "MLFLOW_TRACKING_TOKEN" not in os.environ
         assert setup_mlflow(cfg) == "42"
@@ -49,6 +51,7 @@ def test_dagshub_session_uses_remote_artifacts_and_restores_credentials(tmp_path
         )
 
     assert mlflow.get_tracking_uri() == local_uri
+    assert mlflow.get_registry_uri() == local_uri
     assert os.environ["MLFLOW_TRACKING_PASSWORD"] == "previous-password"
     assert os.environ["MLFLOW_TRACKING_TOKEN"] == "previous-bearer"
     assert "DAGSHUB_USER_TOKEN" not in os.environ

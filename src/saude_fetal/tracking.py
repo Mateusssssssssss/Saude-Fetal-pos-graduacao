@@ -44,7 +44,12 @@ def tracking_session(
     """Seleciona o destino e limita as credenciais DagsHub à operação atual."""
     backend = backend or mlflow_cfg.get("backend", "local")
     if backend == "local":
-        mlflow.set_tracking_uri(resolve_tracking_uri(tracking_uri or mlflow_cfg["tracking_uri"]))
+        uri = resolve_tracking_uri(tracking_uri or mlflow_cfg["tracking_uri"])
+        if urlsplit(uri).scheme == "file":
+            # O projeto já tem runs e um registro local em mlruns/.
+            os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+        mlflow.set_tracking_uri(uri)
+        mlflow.set_registry_uri(uri)
         yield backend
         return
     if backend != "dagshub":
@@ -70,6 +75,7 @@ def tracking_session(
         "MLFLOW_TRACKING_USERNAME",
         "MLFLOW_TRACKING_PASSWORD",
         "MLFLOW_TRACKING_TOKEN",
+        "MLFLOW_REGISTRY_URI",
     )
     previous_env = {key: os.environ.get(key) for key in keys}
     previous_uri = mlflow.get_tracking_uri()
@@ -92,12 +98,15 @@ def tracking_session(
         )
         os.environ.pop("MLFLOW_TRACKING_TOKEN", None)
         # O setter tem precedência sobre o ambiente em sessões reutilizadas.
-        mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+        uri = os.environ["MLFLOW_TRACKING_URI"]
+        mlflow.set_tracking_uri(uri)
+        mlflow.set_registry_uri(uri)
         yield backend
     finally:
         dagshub_config.token = previous_token
         dagshub_config.set_host(previous_host)
         mlflow.set_tracking_uri(previous_uri)
+        mlflow.set_registry_uri(previous_env["MLFLOW_REGISTRY_URI"] or "")
         for key, value in previous_env.items():
             if value is None:
                 os.environ.pop(key, None)
