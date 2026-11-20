@@ -1,0 +1,39 @@
+# Configuração dos dados e do split TRAIN/TEST.
+# Caminhos são relativos à raiz do projeto.
+
+dataset:
+  name: fetal_health_reduced
+  raw_path: data/raw/fetal_health_reduced.csv
+  # Versão reduzida (4 features) do dataset "Fetal Health Classification"
+  # (cardiotocografias - CTG). Origem exata da versão reduzida: a confirmar.
+  description: >-
+    Exames de cardiotocografia (CTG) classificados por especialistas em
+    Normal, Suspeito ou Patológico.
+
+target:
+  column: fetal_health
+  # Rótulos originais do dataset -> nomes legíveis (ordem fixa usada em matrizes).
+  classes:
+    1: Normal
+    2: Suspeito
+    3: Patologico
+  # Classe de maior custo clínico quando não detectada (FN). Usada para
+  # métricas por classe e, futuramente, para política de decisão.
+  critical_class: 3
+
+features:
+  - severe_decelerations
+  - accelerations
+  - fetal_movement
+  - uterine_contractions
+
+split:
+  # Escolha inicial: 20% para TEST (~425 exames, ~35 patológicos).
+  # Justificativa: base pequena; mantém TRAIN suficiente para CV estratificada
+  # e TEST com suporte mínimo da classe patológica. Revisar se necessário.
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+  train_path: data/processed/train.csv
+  test_path: data/processed/test.csv
+  manifest_path: reports/experiments/split_manifest.json

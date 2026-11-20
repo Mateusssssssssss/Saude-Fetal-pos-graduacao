@@ -1,0 +1,94 @@
+{
+  "model": "xgboost",
+  "artifact": "best_model.joblib",
+  "sha256": "21c0317ef64c18db2ee36e55e3ac0c624b6c5561bc40ab8d5475fd58fdcf5a3c",
+  "source_model_sha256": "75bea64f4664a996fae693eb00c7fdd89330bf1db75080db536ac57d05b346f2",
+  "training_scope": "TRAIN completo da base de 21 features",
+  "dataset": {
+    "name": "fetal_health_full",
+    "raw_sha256": "90bd62b95020ffa466f01a2942a79cf6b8b04cc5ac680144d705002d893f6622",
+    "train_sha256": "080fe81292b69fd2ab1dd0a9965efdd4fd91e81c8f5428ac266612e57a3d495f",
+    "split_created_at": "2026-11-19T23:34:14.987818+00:00",
+    "excluded_train_feature_overlap": 5
+  },
+  "features": [
+    "baseline value",
+    "accelerations",
+    "fetal_movement",
+    "uterine_contractions",
+    "light_decelerations",
+    "severe_decelerations",
+    "prolongued_decelerations",
+    "abnormal_short_term_variability",
+    "mean_value_of_short_term_variability",
+    "percentage_of_time_with_abnormal_long_term_variability",
+    "mean_value_of_long_term_variability",
+    "histogram_width",
+    "histogram_min",
+    "histogram_max",
+    "histogram_number_of_peaks",
+    "histogram_number_of_zeroes",
+    "histogram_mode",
+    "histogram_mean",
+    "histogram_median",
+    "histogram_variance",
+    "histogram_tendency"
+  ],
+  "input_dtype": "float64",
+  "class_order": [
+    1,
+    2,
+    3
+  ],
+  "class_labels": {
+    "1": "Normal",
+    "2": "Suspeito",
+    "3": "Patologico"
+  },
+  "critical_class": 3,
+  "preprocessing": "Imputação por mediana no pipeline",
+  "decision_rule": "argmax(predict_proba)",
+  "threshold": null,
+  "test_set_used": false,
+  "hyperparameters": {
+    "objective": "multi:softprob",
+    "eval_metric": "mlogloss",
+    "tree_method": "hist",
+    "n_jobs": 1,
+    "learning_rate": 0.15,
+    "max_depth": 2,
+    "n_estimators": 200,
+    "random_state": 42
+  },
+  "selection_metric": "cv_f1_macro_mean",
+  "metrics": {
+    "cv_f1_macro_mean": 0.9215452529399688,
+    "cv_f1_macro_std": 0.021020802083672543,
+    "cv_accuracy_mean": 0.9545722713864307,
+    "cv_recall_patologico_mean": 0.9357142857142857,
+    "cv_precision_patologico_mean": 0.9438319744771357,
+    "oof_ap_patologico": 0.9719379751534418
+  },
+  "environment": {
+    "python_version": "3.12.16",
+    "sklearn_version": "1.9.1",
+    "pandas_version": "2.3.3",
+    "numpy_version": "2.0.2",
+    "matplotlib_version": "3.11.2",
+    "mlflow_version": "2.22.1",
+    "xgboost_version": "3.4.1",
+    "joblib": "1.6.0"
+  },
+  "mlflow": {
+    "backend": "local",
+    "registered_model": "saude-fetal-xgboost",
+    "version": "1",
+    "alias": "champion",
+    "version_uri": "models:/saude-fetal-xgboost/1",
+    "alias_uri": "models:/saude-fetal-xgboost@champion",
+    "experiment_id": "384558487342144363",
+    "parent_run_id": "1434549ebc3e47b1bb14499acbc9a75b",
+    "run_id": "e74206fabeb343a789e79773f7314dbb",
+    "run_model_uri": "runs:/e74206fabeb343a789e79773f7314dbb/model"
+  }
+}

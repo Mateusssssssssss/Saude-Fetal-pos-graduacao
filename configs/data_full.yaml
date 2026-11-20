@@ -1,0 +1,45 @@
+dataset:
+  name: fetal_health_full
+  raw_path: data/raw/fetal_health.csv
+
+target:
+  column: fetal_health
+  classes:
+    1: Normal
+    2: Suspeito
+    3: Patologico
+  critical_class: 3
+
+features:
+  - baseline value
+  - accelerations
+  - fetal_movement
+  - uterine_contractions
+  - light_decelerations
+  - severe_decelerations
+  - prolongued_decelerations
+  - abnormal_short_term_variability
+  - mean_value_of_short_term_variability
+  - percentage_of_time_with_abnormal_long_term_variability
+  - mean_value_of_long_term_variability
+  - histogram_width
+  - histogram_min
+  - histogram_max
+  - histogram_number_of_peaks
+  - histogram_number_of_zeroes
+  - histogram_mode
+  - histogram_mean
+  - histogram_median
+  - histogram_variance
+  - histogram_tendency
+
+signed_features: [histogram_tendency]
+
+split:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+  group_duplicate_features: true
+  train_path: data/processed/full/train.csv
+  test_path: data/processed/full/test.csv
+  manifest_path: reports/experiments/split_full_manifest.json

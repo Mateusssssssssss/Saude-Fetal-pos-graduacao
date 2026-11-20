@@ -179,3 +179,39 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+.vscode/
+
+# ---------------------------------------------------------------
+# Projeto Saúde Fetal
+# ---------------------------------------------------------------
+# MLflow local (banco de tracking e artefatos)
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Dados derivados (reprodutíveis a partir de data/raw + configs)
+data/interim/*
+data/processed/*
+data/external/*
+!data/**/.gitkeep
+
+# Binários de modelos (rastreados no MLflow)
+models/*
+!models/.gitkeep
+best_model/*.joblib
+best_model/code/
+data/raw/*
+AGENTS.md
+
+# Relatórios publicados. Execuções exploratórias ficam no disco local.
+/reports/experiments/*
+!/reports/experiments/split_manifest.json
+!/reports/experiments/split_full_manifest.json
+/reports/figures/*
+!/reports/figures/eda_*.png
+/reports/metrics/
+/reports/runs/*
+!/reports/runs/1434549ebc3e47b1bb14499acbc9a75b/
+!/reports/runs/82dcf484c0434ce8a349fa585f7a558c/
+/reports/test/*
+!/reports/test/xgboost_full_vs_reduced_v1/

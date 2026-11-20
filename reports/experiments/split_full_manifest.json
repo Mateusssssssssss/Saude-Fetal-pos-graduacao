@@ -1,0 +1,30 @@
+{
+  "created_at": "2026-11-19T23:34:14.987818+00:00",
+  "raw_path": "data/raw/fetal_health.csv",
+  "raw_sha256": "90bd62b95020ffa466f01a2942a79cf6b8b04cc5ac680144d705002d893f6622",
+  "train_path": "data/processed/full/train.csv",
+  "train_sha256": "080fe81292b69fd2ab1dd0a9965efdd4fd91e81c8f5428ac266612e57a3d495f",
+  "test_path": "data/processed/full/test.csv",
+  "test_sha256": "d0fcb0f626a8542fcaf5b9ad8f906a1e5d8ebec0d872b8ac983421eb0a687215",
+  "test_size": 0.2,
+  "random_state": 42,
+  "stratify": true,
+  "excluded_train_feature_overlap": 5,
+  "n_rows": {
+    "raw": 2126,
+    "train": 1695,
+    "test": 426
+  },
+  "class_counts": {
+    "train": {
+      "1": 1321,
+      "2": 234,
+      "3": 140
+    },
+    "test": {
+      "1": 332,
+      "2": 59,
+      "3": 35
+    }
+  }
+}

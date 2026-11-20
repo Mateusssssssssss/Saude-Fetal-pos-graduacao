@@ -1,0 +1,51 @@
+{
+  "evaluated_at": "2026-11-20T00:10:26.792623+00:00",
+  "split": "TEST",
+  "n_test": 426,
+  "n_pathological": 35,
+  "same_exams": true,
+  "decision_rule": "argmax",
+  "models": [
+    {
+      "model": "XGBoost · 21 features",
+      "model_uri": "models:/saude-fetal-xgboost/1",
+      "model_sha256": "21c0317ef64c18db2ee36e55e3ac0c624b6c5561bc40ab8d5475fd58fdcf5a3c",
+      "test_sha256": "d0fcb0f626a8542fcaf5b9ad8f906a1e5d8ebec0d872b8ac983421eb0a687215",
+      "features": [
+        "baseline value",
+        "accelerations",
+        "fetal_movement",
+        "uterine_contractions",
+        "light_decelerations",
+        "severe_decelerations",
+        "prolongued_decelerations",
+        "abnormal_short_term_variability",
+        "mean_value_of_short_term_variability",
+        "percentage_of_time_with_abnormal_long_term_variability",
+        "mean_value_of_long_term_variability",
+        "histogram_width",
+        "histogram_min",
+        "histogram_max",
+        "histogram_number_of_peaks",
+        "histogram_number_of_zeroes",
+        "histogram_mode",
+        "histogram_mean",
+        "histogram_median",
+        "histogram_variance",
+        "histogram_tendency"
+      ]
+    },
+    {
+      "model": "XGBoost · 4 features",
+      "model_uri": "runs:/029dd288f1284c45ab54708dcf94a3e2/model",
+      "model_sha256": "eed1eaaeb453c6d2c42666eb9c6de5a6356ca1ad2309a71818f609c520d65dee",
+      "test_sha256": "14772185080d0daf76a2c231a7c23a8a009c6721c0a97eaf0350308f24b089de",
+      "features": [
+        "severe_decelerations",
+        "accelerations",
+        "fetal_movement",
+        "uterine_contractions"
+      ]
+    }
+  ]
+}

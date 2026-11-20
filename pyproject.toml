@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saude-fetal"
+version = "0.1.0"
+description = "Classificação da saúde fetal (Normal/Suspeito/Patológico) a partir de cardiotocografias, com rastreamento em MLflow."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Mateus" }]
+dependencies = [
+    "numpy>=1.26,<2.0",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "xgboost>=3.1,<4",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+    "mlflow>=2.22,<3.0",
+]
+
+[project.optional-dependencies]
+notebook = ["jupyterlab", "ipykernel", "nbconvert"]
+dagshub = [
+    "dagshub>=0.6,<1",
+    # Compatível com o gql do DagsHub e com o Graphene do MLflow 2.
+    "graphql-core>=3.2,<3.3",
+    "python-dotenv>=1.0,<2",
+]
+dl = ["tensorflow>=2.18,<2.19", "keras>=3.5,<4"]
+dev = ["pytest>=8.0", "black>=24.0", "pycodestyle>=2.12"]
+api = ["fastapi>=0.115", "uvicorn[standard]>=0.32", "pydantic>=2.9"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+filterwarnings = [
+    # avisos internos conhecidos do MLflow/pydantic que não afetam o projeto
+    "ignore::DeprecationWarning:mlflow.*",
+    "ignore::DeprecationWarning:pydantic.*",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]

@@ -1,0 +1,71 @@
+{
+  "created_at": "2026-11-19T23:46:17.936423+00:00",
+  "parent_run_id": "1434549ebc3e47b1bb14499acbc9a75b",
+  "experiment_id": "384558487342144363",
+  "experiment_name": "saude-fetal-classificacao",
+  "tracking_backend": "local",
+  "models": {
+    "random_forest": "14a09290ed3b4897bf54ead9b02b209a",
+    "xgboost": "e74206fabeb343a789e79773f7314dbb"
+  },
+  "best_params": {
+    "random_forest": {
+      "class_weight": "balanced",
+      "max_depth": null,
+      "min_samples_leaf": 2
+    },
+    "xgboost": {
+      "learning_rate": 0.15,
+      "max_depth": 2,
+      "n_estimators": 200
+    }
+  },
+  "primary_metric": "cv_f1_macro_mean",
+  "validation": {
+    "n_splits": 5,
+    "inner_n_splits": 3,
+    "shuffle": true,
+    "primary_metric": "f1_macro"
+  },
+  "group_duplicate_features": true,
+  "features": [
+    "baseline value",
+    "accelerations",
+    "fetal_movement",
+    "uterine_contractions",
+    "light_decelerations",
+    "severe_decelerations",
+    "prolongued_decelerations",
+    "abnormal_short_term_variability",
+    "mean_value_of_short_term_variability",
+    "percentage_of_time_with_abnormal_long_term_variability",
+    "mean_value_of_long_term_variability",
+    "histogram_width",
+    "histogram_min",
+    "histogram_max",
+    "histogram_number_of_peaks",
+    "histogram_number_of_zeroes",
+    "histogram_mode",
+    "histogram_mean",
+    "histogram_median",
+    "histogram_variance",
+    "histogram_tendency"
+  ],
+  "test_set_used": false,
+  "dataset": {
+    "name": "fetal_health_full",
+    "raw_sha256": "90bd62b95020ffa466f01a2942a79cf6b8b04cc5ac680144d705002d893f6622",
+    "train_sha256": "080fe81292b69fd2ab1dd0a9965efdd4fd91e81c8f5428ac266612e57a3d495f",
+    "split_created_at": "2026-11-19T23:34:14.987818+00:00",
+    "excluded_train_feature_overlap": 5
+  },
+  "environment": {
+    "python_version": "3.12.16",
+    "sklearn_version": "1.9.1",
+    "pandas_version": "2.3.3",
+    "numpy_version": "2.0.2",
+    "matplotlib_version": "3.11.2",
+    "mlflow_version": "2.22.1",
+    "xgboost_version": "3.4.1"
+  }
+}

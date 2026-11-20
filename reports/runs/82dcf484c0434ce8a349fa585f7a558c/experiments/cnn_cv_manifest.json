@@ -1,0 +1,61 @@
+{
+  "created_at": "2026-11-19T23:35:36.759594+00:00",
+  "run_id": "82dcf484c0434ce8a349fa585f7a558c",
+  "experiment_id": "384558487342144363",
+  "tracking_backend": "local",
+  "test_set_used": false,
+  "dataset": {
+    "name": "fetal_health_full",
+    "raw_sha256": "90bd62b95020ffa466f01a2942a79cf6b8b04cc5ac680144d705002d893f6622",
+    "train_sha256": "080fe81292b69fd2ab1dd0a9965efdd4fd91e81c8f5428ac266612e57a3d495f",
+    "split_created_at": "2026-11-19T23:34:14.987818+00:00",
+    "excluded_train_feature_overlap": 5
+  },
+  "cv_splitter": "StratifiedGroupKFold",
+  "environment": {
+    "python_version": "3.12.16",
+    "sklearn_version": "1.9.1",
+    "pandas_version": "2.3.3",
+    "numpy_version": "2.0.2",
+    "matplotlib_version": "3.11.2",
+    "mlflow_version": "2.22.1",
+    "tensorflow": "2.18.0",
+    "keras": "3.15.1"
+  },
+  "features": [
+    "baseline value",
+    "accelerations",
+    "fetal_movement",
+    "uterine_contractions",
+    "light_decelerations",
+    "severe_decelerations",
+    "prolongued_decelerations",
+    "abnormal_short_term_variability",
+    "mean_value_of_short_term_variability",
+    "percentage_of_time_with_abnormal_long_term_variability",
+    "mean_value_of_long_term_variability",
+    "histogram_width",
+    "histogram_min",
+    "histogram_max",
+    "histogram_number_of_peaks",
+    "histogram_number_of_zeroes",
+    "histogram_mode",
+    "histogram_mean",
+    "histogram_median",
+    "histogram_variance",
+    "histogram_tendency"
+  ],
+  "class_order": [
+    1,
+    2,
+    3
+  ],
+  "cnn": {
+    "epochs": 60,
+    "batch_size": 32,
+    "filters": 16,
+    "kernel_size": 2,
+    "dense_units": 16,
+    "learning_rate": 0.001
+  }
+}

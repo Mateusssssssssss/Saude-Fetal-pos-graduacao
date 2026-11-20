@@ -1,0 +1,12 @@
+{
+  "backend": "local",
+  "registered_model": "saude-fetal-xgboost",
+  "version": "1",
+  "alias": "champion",
+  "version_uri": "models:/saude-fetal-xgboost/1",
+  "alias_uri": "models:/saude-fetal-xgboost@champion",
+  "experiment_id": "384558487342144363",
+  "parent_run_id": "1434549ebc3e47b1bb14499acbc9a75b",
+  "run_id": "e74206fabeb343a789e79773f7314dbb",
+  "run_model_uri": "runs:/e74206fabeb343a789e79773f7314dbb/model"
+}

@@ -1,0 +1,36 @@
+# Configuração do experimento: validação e rastreamento com MLflow.
+
+experiment:
+  # Prefixo dos artefatos em reports/ (não sobrescreve outros experimentos).
+  prefix: gridsearch_cv
+  random_state: 42
+
+validation:
+  # StratifiedKFold: classificação aproximadamente i.i.d. (um exame por linha,
+  # sem identificador de paciente disponível) e classes desbalanceadas.
+  n_splits: 5
+  inner_n_splits: 3
+  shuffle: true
+  # Métrica principal de comparação (multiclasse): F1 macro dá o mesmo peso
+  # às três classes, evitando que a classe Normal domine a avaliação.
+  primary_metric: f1_macro
+
+cnn:
+  epochs: 60
+  batch_size: 32
+  filters: 16
+  kernel_size: 2
+  dense_units: 16
+  learning_rate: 0.001
+
+mlflow:
+  backend: local  # local ou dagshub
+  # FileStore local em mlruns/ + artefatos em mlartifacts/, ambos na raiz do
+  # projeto (ignorados no Git). Interface: mlflow ui --backend-store-uri ./mlruns
+  tracking_uri: mlruns
+  artifact_dir: mlartifacts
+  experiment_name: saude-fetal-classificacao
+  log_models: true
+  dagshub:
+    repo_owner: mateusssssss
+    repo_name: Saude-Fetal-pos-graduacao
