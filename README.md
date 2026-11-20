@@ -230,6 +230,25 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/invocations -ContentTy
 
 `/invocations` recebe as 21 features e devolve a classe `1` (Normal), `2` (Suspeito) ou `3` (Patológico) em `predictions`. [Formato da API de inferência do MLflow](https://mlflow.org/docs/latest/ml/deployment/deploy-model-locally/)
 
+### 4.11. CI/CD no GitHub Actions
+
+O workflow [CI/CD](.github/workflows/ci-cd.yml) roda em pull requests para `main`, pushes em `main` e releases publicadas. O check `CI - testes e Docker` executa o pytest em Conda com Python 3.12, valida o Compose e testa as importações na imagem. Os testes usam dados sintéticos e tracking temporário. A validação do Compose usa um valor fictício para o token.
+
+Depois que o CI passa, uma release estável com tag como `v0.1.0` baseada em `main` publica a imagem Linux AMD64 no GitHub Container Registry. A publicação usa o `GITHUB_TOKEN` do Actions. A imagem publicada continua buscando o XGBoost campeão no DagsHub em execução.
+
+Para usar uma release, salve o exemplo abaixo como `compose.release.yaml`. Substitua a tag pela versão publicada e mantenha o token do DagsHub no `.env` local. Se o pacote estiver privado, autentique no GHCR com uma credencial que tenha acesso de leitura.
+
+```yaml
+services:
+  inference:
+    image: ghcr.io/mateusssssssssss/saude-fetal-pos-graduacao:v0.1.0
+```
+
+```powershell
+docker compose -f compose.yaml -f compose.release.yaml pull
+docker compose -f compose.yaml -f compose.release.yaml up -d --no-build --wait
+```
+
 ## 5. Resultados da base de 21 features
 
 Médias dos cinco folds externos agrupados no TRAIN. A AP patológica é calculada sobre as predições OOF.
