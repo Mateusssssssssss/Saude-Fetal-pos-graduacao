@@ -1,15 +1,14 @@
 # Saúde Fetal — Classificação de Cardiotocografias (CTG)
 
-Projeto da pós-graduação em IA e Aprendizado de Máquina para classificação da saúde fetal a partir de exames de cardiotocografia (CTG). (baseado em Cookiecutter Data Science e Made With ML).
+Projeto de pós-graduação em IA e Aprendizado de Máquina para classificar exames de cardiotocografia (CTG) com 21 medidas agregadas por exame. A organização segue Cookiecutter Data Science e Made With ML.
 
 ## 1. Problema, população e dados
 
 - **Objetivo:** classificar exames de cardiotocografia (CTG) em três classes atribuídas por especialistas: `1 = Normal`, `2 = Suspeito`, `3 = Patológico`.
-- **Unidade de observação:** um exame de CTG por linha (2.126 linhas em `data/raw/fetal_health_reduced.csv`). Não há identificador de paciente disponível na base.
+- **Unidade de observação:** um exame de CTG por linha. O arquivo `data/raw/fetal_health.csv` contém **2.126 exames e 21 features**, além da coluna-alvo. O perfil está em [configs/data_full.yaml](configs/data_full.yaml).
 - **Target:** `fetal_health` (multiclasse, ordinal em gravidade).
 - **Classe crítica:** `Patológico (3)` — falsos negativos (não sinalizar um caso patológico) têm maior custo clínico; a avaliação acompanha `F1 macro` como métrica principal e `Recall`/`Precision` por classe (com atenção especial à classe Patológico).
-- **Features disponíveis (`fetal_health_reduced.csv`):** `severe_decelerations`, `accelerations`, `fetal_movement`, `uterine_contractions`.
-  - *Nota:* trata-se de uma versão reduzida (4 features) do dataset público *Fetal Health Classification*; a origem exata da redução e a unidade/escala exata dos valores devem ser confirmadas durante a EDA.
+- **Features disponíveis** incluem frequência cardíaca fetal basal, acelerações, movimentos fetais, contrações uterinas, três tipos de desaceleração, quatro medidas de variabilidade e dez estatísticas do histograma da frequência cardíaca. O YAML registra os nomes e a ordem usados pelos modelos.
 
 > **Aviso de saúde e ética:** base pública e sem identificadores pessoais. O projeto tem finalidade acadêmica e **não** representa prontidão clínica, validação prospectiva ou recomendação assistencial.
 
@@ -24,19 +23,21 @@ Saude-Fetal-pos-graduacao/
 ├── requirements.txt                 # Dependências pip complementares
 ├── Makefile                         # Atalhos opcionais
 ├── configs/
-│   ├── data.yaml                    # Schema, classes, features e split TRAIN/TEST
+│   ├── data_full.yaml               # Schema das 21 features e split TRAIN/TEST
 │   ├── model.yaml                   # Random Forest, XGBoost e grades de busca
 │   └── experiment.yaml              # Validação cruzada e configuração do MLflow
 ├── data/
 │   ├── raw/
-│   │   └── fetal_health_reduced.csv # Origem imutável
+│   │   └── fetal_health.csv         # Base de 21 features, mantida localmente
 │   ├── interim/
-│   ├── processed/                   # train.csv e test.csv gerados pelo split
+│   ├── processed/full/              # TRAIN e TEST da base completa
 │   └── external/
 ├── notebooks/
-│   ├── 01_eda.ipynb                 # EDA (integridade na base completa; análises no TRAIN)
+│   ├── 01_eda.ipynb                 # EDA histórica
 │   ├── 02_model_training.ipynb      # Disparo controlado (RUN_TRAINING=False) do treino + MLflow
-│   └── 03_model_metrics.ipynb       # Análise das métricas de treino/CV/OOF (lê artefatos)
+│   ├── 03_model_metrics.ipynb       # Métricas de Random Forest e XGBoost
+│   ├── notebooks_metrics_dl.ipynb   # Métricas da CNN
+│   └── notebook_metrics_teste.ipynb # Avaliação final no TEST
 ├── src/
 │   └── saude_fetal/
 │       ├── __init__.py
@@ -49,17 +50,19 @@ Saude-Fetal-pos-graduacao/
 │       ├── analysis.py              # Funções de apoio à EDA (somente TRAIN)
 │       ├── tracking.py              # MLflow local ou hospedado pelo DagsHub
 │       ├── train.py                 # Fluxo de treino com CV no TRAIN + log no MLflow
+│       ├── train_dl.py              # Treino e avaliação da CNN
+│       ├── evaluate_test.py         # Geração dos resultados finais no TEST
 │       └── predict.py               # Inferência a partir de pipeline salvo
 ├── scripts/
 │   ├── prepare_data.py              # Wrapper CLI para criar o split TRAIN/TEST
 │   ├── train.py                     # Wrapper CLI para treinar e logar no MLflow
 │   └── mlflow_ui.ps1                # Abre a interface do MLflow (PowerShell)
 ├── tests/                           # Testes automatizados com pytest (dados sintéticos)
-├── models/
+├── best_model/                      # Metadados e pipeline Joblib do XGBoost selecionado
 ├── reports/
-│   ├── figures/
-│   ├── metrics/
-│   └── experiments/
+│   ├── experiments/                 # Manifestos dos splits
+│   ├── runs/                        # Métricas de validação, gráficos e grades
+│   └── test/                        # Avaliação final no TEST
 └── docs/
 ```
 
@@ -83,31 +86,31 @@ pip install -e ".[notebook,dev]"
 
 ### 4.1. Preparar o split TRAIN/TEST (uma única vez)
 
+Coloque `fetal_health.csv` em `data/raw/`. Os dados brutos e as partições processadas são locais.
+
 ```bash
-python -m saude_fetal.data
-# ou: python scripts/prepare_data.py
+python -c "from saude_fetal.config import load_config; from saude_fetal.data import make_split; make_split(load_config('data_full'))"
 ```
 
-Gera `data/processed/train.csv`, `data/processed/test.csv` e o manifesto `reports/experiments/split_manifest.json` (com hashes SHA256 e contagens por classe). Por segurança, o split não é sobrescrito sem `--force`.
+O perfil grava `data/processed/full/train.csv` e `data/processed/full/test.csv`. O [manifesto do split](reports/experiments/split_full_manifest.json) registra **1.695 exames no TRAIN** e **426 no TEST**, além dos hashes SHA-256. O particionamento inicial reservou 20% para TEST com seed 42. Cinco linhas com vetores de features idênticos aos de exames do TEST foram excluídas do TRAIN.
 
-### 4.2. Executar a EDA
+### 4.2. Inspecionar as 21 features no TRAIN
 
-Abra e execute `notebooks/01_eda.ipynb` no JupyterLab/VS Code usando o kernel `saude_fetal`.
+```bash
+python -c "from saude_fetal.config import load_config; from saude_fetal.data import load_split; X, y = load_split('train', load_config('data_full')); print(X.describe().T); print(y.value_counts().sort_index())"
+```
 
-- Checagens de integridade (schema, ausentes, duplicatas) rodam na base completa.
-- Todas as análises que orientam modelagem (distribuições, faixas, correlações, associação vs permutation importance) rodam **exclusivamente no TRAIN**.
-- Tabelas e figuras são salvas em `reports/metrics/eda_*.csv` e `reports/figures/eda_*.png`.
+Use o TRAIN para análises que orientem a modelagem. O [notebook de EDA](notebooks/01_eda.ipynb) reúne a análise histórica anterior ao experimento de 21 features.
 
 ### 4.3. Buscar hiperparâmetros e registrar os modelos no MLflow
 
 ```bash
-python -m saude_fetal.train
-# ou: python scripts/train.py
+python -m saude_fetal.train --workflow trees --data-config data_full
 ```
 
-Para treinar Random Forest e XGBoost com as 21 features de `data/raw/fetal_health.csv`, use `python -m saude_fetal.train --data-config data_full`. A base completa usa os mesmos folds externos da CNN e mantém vetores idênticos juntos também nos folds internos da busca.
+As árvores usam os mesmos cinco folds externos agrupados da CNN. A busca interna também mantém exames com vetores de features idênticos juntos.
 
-Também é possível disparar pelo notebook `notebooks/02_model_training.ipynb` alterando `RUN_TRAINING = True`.
+Para usar o [notebook de treino](notebooks/02_model_training.ipynb), defina `RUN_TRAINING = True` e acrescente `data_config="data_full"` à chamada de `run_training`.
 
 Por padrão, o destino é o FileStore local em `mlruns/`, com artefatos em `mlartifacts/`. O fluxo compara Random Forest e XGBoost em cinco folds externos estratificados no TRAIN. Dentro de cada fold externo, uma `GridSearchCV` de três folds seleciona por F1 macro e reajusta a melhor configuração. Os pipelines dos folds externos geram os rótulos e scores OOF. Depois, uma busca de três folds no TRAIN completo seleciona e reajusta o pipeline final de cada família.
 
@@ -127,7 +130,7 @@ python -m pip install -e ".[dagshub]"
 Para autenticação por token, copie `.env.example` para `.env` na raiz e preencha `DAGSHUB_USER_TOKEN` com um token de uma conta com acesso de escrita ao repositório. A variável de ambiente tem precedência sobre o arquivo, que é ignorado pelo Git. Em sessão interativa, o SDK também aceita autenticação via `dagshub login`. [Autenticação do cliente DagsHub](https://dagshub.com/docs/client/reference/auth/)
 
 ```powershell
-python -m saude_fetal.train --tracking-backend dagshub
+python -m saude_fetal.train --workflow trees --data-config data_full --tracking-backend dagshub
 ```
 
 No notebook de treino, defina `TRACKING_BACKEND = "dagshub"`. Para alterar o padrão do projeto, defina `mlflow.backend: dagshub` em `configs/experiment.yaml`. Use `--tracking-backend local` para selecionar o FileStore do projeto.
@@ -164,17 +167,15 @@ python -m pytest
 
 ### 4.7. Treinar a CNN 1D
 
-A CNN usa TensorFlow/Keras e recebe as quatro features na ordem de `configs/data.yaml`. Como a base contém medidas agregadas, a convolução percorre colunas tabulares. A primeira receita usa 60 épocas por fold e no refit. Imputação e normalização são aprendidas em cada bloco de treino e fazem parte do modelo salvo.
+A CNN usa TensorFlow/Keras e recebe as 21 features na ordem de `configs/data_full.yaml`. A convolução percorre as colunas de medidas agregadas por exame. O treino usa 60 épocas por fold e no refit. A imputação e a normalização são aprendidas em cada bloco de treino e fazem parte do modelo salvo.
 
 ```powershell
 conda activate saude_fetal
 python -m pip install -e ".[dl,notebook]"
-python -m saude_fetal.train --workflow cnn
+python -m saude_fetal.train --workflow cnn --data-config data_full
 ```
 
-Para treinar a CNN com as 21 features de `data/raw/fetal_health.csv`, use `python -m saude_fetal.train --workflow cnn --data-config data_full`. Esse perfil grava um split separado, preserva as linhas reservadas para TEST e exclui do TRAIN vetores de features idênticos aos do TEST. A validação da base completa mantém vetores idênticos no mesmo fold.
-
-Use `--workflow all` para executar também a busca das árvores, ou acrescente `--tracking-backend dagshub` para registrar os runs remotamente. O fluxo padrão continua sendo `trees`. O [notebook de métricas da CNN](notebooks/notebooks_metrics_dl.ipynb) lê o último run concluído e mostra curvas por época, métricas por fold, matriz OOF e PR/ROC patológica.
+Use `--workflow all --data-config data_full` para treinar as árvores e a CNN na base completa. O [notebook de métricas da CNN](notebooks/notebooks_metrics_dl.ipynb) mostra curvas por época, métricas por fold, matriz OOF e curvas PR e ROC da classe Patológico.
 
 O modelo Keras é salvo em `runs:/<run_id>/model`. Para carregá-lo, abra uma sessão de tracking com `tracking_session` de `saude_fetal.tracking` e chame `mlflow.keras.load_model`. Use uma matriz `float32` com as colunas na ordem de `input_schema.json`. A coluna de maior score indica a posição da classe em `class_order`.
 
@@ -202,14 +203,27 @@ print(pipeline.predict_proba(X))  # Colunas na ordem de metadata["class_order"].
 
 ### 4.9. Consultar a avaliação no TEST
 
-O [notebook de métricas no TEST](notebooks/notebook_metrics_teste.ipynb) compara o XGBoost versão 1, com 21 features, ao XGBoost congelado de quatro features nos mesmos exames reservados. O comando `python -m saude_fetal.evaluate_test` gera os relatórios agregados em `reports/test/xgboost_full_vs_reduced_v1/` e reaproveita os resultados quando já existem.
+O [notebook de métricas no TEST](notebooks/notebook_metrics_teste.ipynb) apresenta a avaliação do XGBoost versão 1 nos 426 exames reservados. A linha `XGBoost · 21 features` do [CSV da avaliação](reports/test/xgboost_full_vs_reduced_v1/metrics/test_model_metrics.csv) corresponde ao modelo selecionado.
 
 As métricas do TEST registram a avaliação das receitas congeladas. Mudanças guiadas por esses resultados exigem novos dados reservados para confirmação independente.
 
-## 5. Metodologia atual e limitações
+## 5. Resultados da base de 21 features
 
-- **Split:** 80% TRAIN / 20% TEST estratificado (`random_state=42`).
-- **Validação:** CV aninhada estratificada no TRAIN com seed 42 e divisão externa compartilhada. F1 macro orienta a busca. Confira também o comportamento da classe Patológico e a dispersão entre folds.
-- **Pré-processamento e decisão:** imputação pela mediana ajustada dentro de cada fold. O XGBoost codifica os rótulos internamente e devolve as classes originais 1, 2 e 3. A decisão usa a classe de maior score.
-- **Relatórios publicados:** o Git inclui os gráficos da EDA, os manifestos dos splits, as execuções oficiais de árvores e da CNN na base completa e a comparação no TEST. As tabelas geradas pela EDA e o histórico exploratório ficam no disco local.
-- **Limitações conhecidas:** apenas 4 features discretas (possíveis combinações idênticas com rótulos distintos); ausência de identificador de paciente impede `GroupKFold`; unidades originais da versão reduzida pendentes de confirmação.
+Médias dos cinco folds externos agrupados no TRAIN. A AP patológica é calculada sobre as predições OOF.
+
+| Modelo | F1 macro (média ± desvio-padrão) | Acurácia | Recall patológico | Precisão patológica | AP patológica OOF |
+|---|---:|---:|---:|---:|---:|
+| XGBoost | 92,2% ± 2,1 p.p. | 95,5% | 93,6% | 94,4% | 0,972 |
+| Random Forest | 88,9% ± 2,1 p.p. | 93,5% | 90,0% | 92,7% | 0,974 |
+| CNN 1D | 86,3% ± 2,8 p.p. | 92,6% | 82,9% | 89,2% | 0,932 |
+
+O **XGBoost** foi selecionado pelo F1 macro médio no TRAIN. A configuração escolhida usa 200 árvores, profundidade máxima 2 e taxa de aprendizado 0,15.
+
+No **TEST**, o XGBoost versão 1 obteve **89,1% de F1 macro**, **94,1% de acurácia**, **91,4% de recall patológico**, **88,9% de precisão patológica** e **0,881 de AP patológica**. Detectou 32 dos 35 casos patológicos e emitiu 4 alertas patológicos incorretos.
+
+## 6. Metodologia e limitações
+
+- **Validação:** cinco folds externos estratificados com agrupamento por vetores de features idênticos e seed 42. As árvores usam três folds internos para seleção por F1 macro. A CNN usa uma receita fixa.
+- **Pré-processamento e decisão:** imputação pela mediana ajustada dentro de cada fold. A CNN também normaliza as features usando seu bloco de treino. O XGBoost devolve os rótulos originais 1, 2 e 3. A decisão usa a classe de maior score.
+- **Relatórios publicados:** o Git inclui os gráficos históricos da EDA, os manifestos dos splits, as execuções oficiais na base completa e a avaliação no TEST. As tabelas da EDA e os runs exploratórios são mantidos localmente.
+- **Limitações:** a base contém agregados por exame e carece de identificadores de pacientes. O agrupamento por features evita separar vetores idênticos e a independência entre pacientes permanece sem verificação.
